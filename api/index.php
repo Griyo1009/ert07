@@ -1,26 +1,28 @@
 <?php
 
-$_ENV['LOG_CHANNEL'] = 'stderr';
-$_ENV['SESSION_DRIVER'] = 'cookie';
-$_ENV['CACHE_DRIVER'] = 'array';
-$_ENV['QUEUE_CONNECTION'] = 'sync';
+// PENTING: Set environment variables DULU sebelum load Laravel
+$_SERVER['APP_ENV'] = $_ENV['APP_ENV'] = 'production';
+$_SERVER['LOG_CHANNEL'] = $_ENV['LOG_CHANNEL'] = 'stderr';
+$_SERVER['SESSION_DRIVER'] = $_ENV['SESSION_DRIVER'] = 'cookie';
+$_SERVER['CACHE_DRIVER'] = $_ENV['CACHE_DRIVER'] = 'array';
+$_SERVER['QUEUE_CONNECTION'] = $_ENV['QUEUE_CONNECTION'] = 'sync';
 
 putenv('LOG_CHANNEL=stderr');
 putenv('SESSION_DRIVER=cookie');
 putenv('CACHE_DRIVER=array');
 
-// Setup writable temp directories
-$tempDirs = [
+// Buat temp directories kalau takde
+$dirs = [
     '/tmp/storage/framework/sessions',
-    '/tmp/storage/framework/views',
-    '/tmp/storage/framework/cache/data',
+    '/tmp/storage/framework/views', 
+    '/tmp/storage/framework/cache/data'
 ];
 
-foreach ($tempDirs as $dir) {
-    if (!file_exists($dir)) {
+foreach ($dirs as $dir) {
+    if (!is_dir($dir)) {
         @mkdir($dir, 0755, true);
     }
 }
 
-// 3. Panggil Laravel yang asli
+// NOW load Laravel
 require __DIR__ . '/../public/index.php';

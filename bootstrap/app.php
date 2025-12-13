@@ -4,8 +4,9 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 
-putenv('LOG_CHANNEL=stderr');
+$_SERVER['LOG_CHANNEL'] = 'stderr';
 $_ENV['LOG_CHANNEL'] = 'stderr';
+putenv('LOG_CHANNEL=stderr');
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
