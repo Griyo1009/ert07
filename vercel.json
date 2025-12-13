@@ -1,7 +1,5 @@
 {
   "version": 2,
-  "buildCommand": "npm install && npm run build",
-  "outputDirectory": "public",
   "functions": {
     "api/index.php": {
       "runtime": "vercel-php@0.7.2"
@@ -24,6 +22,5 @@
       "src": "/(.*)",
       "dest": "/api/index.php"
     }
-  ],
-  "buildCommand": "npm install && npm run build"
+  ]
 }
