@@ -1,5 +1,7 @@
 {
   "version": 2,
+  "buildCommand": "npm install && npm run build",
+  "outputDirectory": "public",
   "functions": {
     "api/index.php": {
       "runtime": "vercel-php@0.7.2"
@@ -7,8 +9,21 @@
   },
   "routes": [
     {
+      "src": "/build/(.*)",
+      "dest": "/public/build/$1"
+    },
+    {
+      "src": "/(assets|css|js|images|img|storage)/(.*)",
+      "dest": "/public/$1/$2"
+    },
+    {
+      "src": "/(favicon.ico|robots.txt)",
+      "dest": "/public/$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "/api/index.php"
     }
-  ]
+  ],
+  "buildCommand": "npm install && npm run build"
 }
