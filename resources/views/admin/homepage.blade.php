@@ -36,7 +36,7 @@
     <!-- Isi Statistik -->
     <div class="row text-center p-4 mx-0">
       <!-- Warga Aktif -->
-      <div class="col-md-6 border-end border-dark d-flex flex-column justify-content-between">
+      <div class="col-md-6 border-lg-end border-dark d-flex flex-column justify-content-between">
         <div class="text-start">
           <small class="text-muted">Warga Aktif</small>
         </div>
@@ -44,7 +44,6 @@
           <h3 class="fw-bold mb-0">{{ $warga_aktif }} Warga</h3>
           <i class="bi bi-people-fill fs-3"></i>
         </div>
-
       </div>
 
       <!-- Materi -->

@@ -100,7 +100,7 @@
                                     {{ $m->files->count() }} Lampiran
                                 </span>
                                 
-                                <a href="{{ route('admin.lihat-materi', $m->id_materi) }}" 
+                                <a href="{{ route('warga.lihat-materi', $m->id_materi) }}" 
                                    class="btn btn-sm btn-outline-gradient">
                                     <i class="bi bi-eye"></i> Lihat
                                 </a>

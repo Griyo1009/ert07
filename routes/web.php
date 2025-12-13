@@ -4,7 +4,7 @@ use App\Http\Middleware\AdminAccess;
 use App\Http\Middleware\UserAccess; 
 use App\Http\Middleware\CheckSession;
 use Illuminate\Support\Facades\Route;
-use App\Models\User;  // <-- ini wajib
+use App\Models\User;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\WargaController;
