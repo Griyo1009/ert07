@@ -7,7 +7,7 @@
       "use": "vercel-php@0.7.2",    
       "config": {
             
-        "buildCommand": "composer install --no-dev --optimize-autoloader"
+        "buildCommand": "composer install --no-dev --optimize-autoloader && npm install && npm run build"
       }
     },
 
