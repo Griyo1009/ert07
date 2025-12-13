@@ -7,7 +7,6 @@ use Illuminate\Foundation\Configuration\Middleware;
 $_SERVER['LOG_CHANNEL'] = 'stderr';
 $_ENV['LOG_CHANNEL'] = 'stderr';
 putenv('LOG_CHANNEL=stderr');
-$app->useStoragePath('/tmp/storage');
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
