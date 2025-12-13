@@ -1,21 +1,43 @@
 {
-  "private": true,
-  "type": "module",
+    "private": true,
+    "type": "module",
+    "builds": [   
+    {
+      "src": "api/index.php",   
+      "use": "vercel-php@0.7.2",    
+      "config": {
+            
+        "buildCommand": "composer install --no-dev --optimize-autoloader"
+      }
+    },
+
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        
+        "installCommand": "npm install",
+        
+        "buildCommand": "npm run build" 
+      }
+    }
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "vercel-build": "npm run build"
-  },
-  "devDependencies": {
-    "@tailwindcss/vite": "^4.0.0",
-    "autoprefixer": "^10.4.22",
-    "axios": "^1.7.4",
-    "laravel-vite-plugin": "^1.2.0",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.17",
-    "vite": "^6.0.11"
-  },
-  "engines": {
-    "node": "22.14.0"
-  }
+        "dev": "vite",
+        "build": "vite build",
+        "vercel-build": "npm run build"
+    },
+    "devDependencies": {
+        "@tailwindcss/vite": "^4.0.0",
+        "autoprefixer": "^10.4.22",
+        "axios": "^1.7.4",
+        "concurrently": "^9.0.1",
+        "laravel-vite-plugin": "^1.2.0",
+        "postcss": "^8.5.6",
+        "tailwindcss": "^4.1.17",
+        "vite": "^6.0.11"
+    },
+    "engines": {
+        "node": "22.14.0" 
+    }
 }
