@@ -66,20 +66,14 @@ return [
         ],
 
         'single' => [
-            'driver' => 'monolog',
-            'handler' => StreamHandler::class,
-            'with' => [
-                'stream' => 'php://stderr',
-            ],
+            'driver' => 'stack', // Menggunakan stack yang sudah berisi 'stderr'
+    'channels' => ['stderr'],
         ],
 
         'daily' => [
-            'driver' => 'monolog',
-            'handler' => StreamHandler::class,
-            'with' => [
-                'stream' => 'php://stderr',
-            ],
-        ],
+    'driver' => 'stack',
+    'channels' => ['stderr'],
+],
 
         'slack' => [
             'driver' => 'slack',
