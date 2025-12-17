@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class ProfileController extends Controller
 {
@@ -56,39 +57,47 @@ class ProfileController extends Controller
         $user = Auth::user();
 
         $request->validate([
-            'foto_profil' => 'required|image|mimes:jpg,jpeg,png|max:2048' // Max 2MB
+            'foto_profil' => 'required|image|mimes:jpg,jpeg,png|max:2048' 
         ]);
 
-        // 1. Hapus foto lama dari Cloudinary
-        if ($user->foto_profil && $user->foto_profil !== 'default.png') {
-            // Asumsi foto_profil menyimpan Public ID Cloudinary
-            try {
-                Cloudinary::destroy($user->foto_profil);
-            } catch (\Exception $e) {
-                // Log error jika penghapusan gagal, tapi lanjutkan
-                \Log::warning('Gagal menghapus foto profil lama dari Cloudinary: ' . $e->getMessage());
+        try {
+            // 1. Hapus foto lama dari Cloudinary
+            if ($user->foto_profil && $user->foto_profil !== 'default.png') {
+                try {
+                    // Karena sudah di-use di atas, ini sekarang akan berhasil
+                    Cloudinary::destroy($user->foto_profil);
+                } catch (\Exception $e) {
+                    \Log::warning('Gagal menghapus foto profil lama: ' . $e->getMessage());
+                }
             }
+
+            // 2. Upload foto baru ke Cloudinary
+            $file = $request->file('foto_profil');
+            
+            // Upload ke folder 'profiles' di Cloudinary
+            $uploadedFile = $file->storeOnCloudinary('profiles');
+
+            // Ambil data hasil upload
+            $publicId = $uploadedFile->getPublicId();
+            $secureUrl = $uploadedFile->getSecureUrl(); 
+
+            // Simpan ke database
+            $user->foto_profil = $publicId; 
+            $user->save();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Foto profil berhasil diperbarui.',
+                'image' => $secureUrl 
+            ]);
+
+        } catch (\Exception $e) {
+            // Tangkap error agar kita tahu apa masalahnya di response JSON (untuk debugging)
+            \Log::error('Upload Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan server: ' . $e->getMessage()
+            ], 500);
         }
-
-        // 2. Upload foto baru ke Cloudinary
-        $file = $request->file('foto_profil');
-        // GANTI: Menggunakan storeOnCloudinary()
-        $uploadedFile = $file->storeOnCloudinary('profiles'); // Folder 'profiles'
-
-        // Ambil Public ID untuk disimpan di database
-        $publicId = $uploadedFile->getPublicId();
-        // Ambil URL Aman untuk respons klien
-        $secureUrl = $uploadedFile->getSecureUrl(); 
-
-        $user->foto_profil = $publicId; // Simpan Public ID
-        $user->save();
-        
-        // Mengembalikan path lengkap (URL Aman) untuk update di client side
-        return response()->json([
-            'success' => true,
-            'message' => 'Foto profil berhasil diperbarui.',
-            // GANTI: Menggunakan URL Aman Cloudinary
-            'image' => $secureUrl 
-        ]);
     }
 }
