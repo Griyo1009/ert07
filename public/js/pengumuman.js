@@ -10,11 +10,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- CONFIG ---
     const CLOUD_NAME = window.CLOUDINARY_CLOUD_NAME || 'dl0v35l4q'; 
     const CLOUDINARY_BASE_URL = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/`;
-    // Gunakan placeholder online agar tidak 404 jika file lokal hilang di Vercel
     const FALLBACK_IMAGE_URL = window.DEFAULT_IMAGE_URL || 'https://via.placeholder.com/200x150?text=No+Image';
 
     // Helper: Generate URL
     function getCloudinaryUrl(publicId) {
+        // DEBUG: Cek ID gambar yang diterima
+        // console.log("Processing Image ID:", publicId); 
+        
         if (!publicId) return FALLBACK_IMAGE_URL;
         if (publicId.startsWith('http')) return publicId;
         
@@ -31,11 +33,31 @@ document.addEventListener("DOMContentLoaded", () => {
         toggleBtn.innerHTML = 'Tambah <i class="bi bi-plus-circle ms-2"></i>';
     });
 
-    // --- CREATE (POST) ---
+    // ==========================================
+    // DEBUG: CREATE (POST)
+    // ==========================================
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
+        console.group("🚀 Debug: Submit Tambah Pengumuman");
+
         const formData = new FormData(form);
         const token = document.querySelector('input[name="_token"]').value;
+
+        // 1. Cek apakah file terdeteksi di FormData
+        const fileInput = form.querySelector('input[type="file"]');
+        if (fileInput.files.length > 0) {
+            console.log("📂 File ditemukan:", fileInput.files[0].name);
+            console.log("📏 Ukuran:", (fileInput.files[0].size / 1024).toFixed(2) + " KB");
+            console.log("📄 Tipe:", fileInput.files[0].type);
+        } else {
+            console.warn("⚠️ Tidak ada file yang dipilih user.");
+        }
+
+        // 2. Cek isi FormData
+        console.log("📦 Isi Payload FormData:");
+        for (let [key, value] of formData.entries()) {
+            console.log(`${key}:`, value);
+        }
 
         try {
             const res = await fetch("/admin/pengumuman", {
@@ -43,9 +65,25 @@ document.addEventListener("DOMContentLoaded", () => {
                 headers: { "X-CSRF-TOKEN": token },
                 body: formData,
             });
-            const data = await res.json();
+
+            console.log("📡 Status Response:", res.status, res.statusText);
+
+            // 3. Baca Response sebagai Text dulu (untuk jaga-jaga kalau bukan JSON/Error HTML)
+            const textResponse = await res.text();
+            console.log("📥 Raw Response Body:", textResponse);
+
+            let data;
+            try {
+                data = JSON.parse(textResponse); // Coba parse ke JSON
+            } catch (jsonErr) {
+                console.error("❌ Gagal parse JSON. Kemungkinan error server (HTML):", jsonErr);
+                Swal.fire("Error Server", "Cek Console untuk detail error HTML", "error");
+                console.groupEnd();
+                return;
+            }
 
             if (res.ok && data.success) {
+                console.log("✅ Sukses simpan data:", data);
                 Swal.fire({ icon: "success", title: "Berhasil!", text: "Data ditambahkan.", timer: 1500, showConfirmButton: false });
                 
                 const p = data.data;
@@ -71,15 +109,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 form.reset(); form.classList.add("d-none");
                 toggleBtn.innerHTML = 'Tambah <i class="bi bi-plus-circle ms-2"></i>';
             } else {
-                Swal.fire("Gagal", data.message, "error");
+                console.warn("❌ Validasi Backend Gagal:", data);
+                Swal.fire("Gagal", data.message || "Terjadi kesalahan validasi", "error");
             }
-        } catch (err) { Swal.fire("Error", "Gagal kirim data.", "error"); }
+        } catch (err) { 
+            console.error("❌ Fetch Error:", err);
+            Swal.fire("Error", "Gagal kirim data.", "error"); 
+        }
+        console.groupEnd();
     });
 
     // --- EDIT BUTTON CLICK ---
     list.addEventListener("click", async (e) => {
         if (e.target.classList.contains("btn-edit")) {
             const id = e.target.dataset.id;
+            console.log("✏️ Klik Edit ID:", id);
             try {
                 const res = await fetch(`/admin/pengumuman/${id}`);
                 const data = await res.json();
@@ -103,13 +147,25 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // --- UPDATE SUBMIT (PUT) ---
+    // ==========================================
+    // DEBUG: UPDATE SUBMIT (PUT)
+    // ==========================================
     editForm.addEventListener("submit", async (e) => {
         e.preventDefault();
+        console.group("🚀 Debug: Submit Update Pengumuman");
+        
         const id = document.getElementById("edit_id").value;
         const formData = new FormData(e.target);
-        formData.append("_method", "PUT"); // SPOOFING PUT METHOD
+        formData.append("_method", "PUT"); 
         const token = document.querySelector('input[name="_token"]').value;
+
+        // Cek file baru di form edit
+        const fileInput = editForm.querySelector('input[type="file"]');
+        if (fileInput.files.length > 0) {
+            console.log("📂 File Baru ditemukan:", fileInput.files[0].name);
+        } else {
+            console.log("ℹ️ Tidak ada file baru yang diupload (menggunakan gambar lama).");
+        }
 
         try {
             const res = await fetch(`/admin/pengumuman/${id}`, {
@@ -117,9 +173,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 headers: { "X-CSRF-TOKEN": token },
                 body: formData,
             });
-            const data = await res.json();
+            
+            console.log("📡 Status Response:", res.status);
+            const textResponse = await res.text();
+            console.log("📥 Raw Response Body:", textResponse);
+
+            let data;
+            try {
+                data = JSON.parse(textResponse);
+            } catch (err) {
+                console.error("❌ Gagal parse JSON:", err);
+                Swal.fire("Error", "Response server bukan JSON valid", "error");
+                console.groupEnd();
+                return;
+            }
 
             if (res.ok && data.success) {
+                console.log("✅ Update Sukses:", data);
                 Swal.fire({ icon: "success", title: "Berhasil!", text: "Data diperbarui.", timer: 1500, showConfirmButton: false });
                 
                 const card = document.querySelector(`[data-id="${id}"]`);
@@ -127,7 +197,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     const p = data.data;
                     if (p.gambar) {
                         const imgEl = card.querySelector("img");
-                        if(imgEl) imgEl.src = getCloudinaryUrl(p.gambar);
+                        if(imgEl) {
+                            // Update src gambar di DOM
+                            imgEl.src = getCloudinaryUrl(p.gambar);
+                            console.log("🖼️ Gambar di DOM diperbarui ke:", imgEl.src);
+                        }
                     }
                     card.querySelector("h5").textContent = formData.get("judul");
                     const isi = formData.get("isi");
@@ -135,9 +209,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 bootstrap.Modal.getInstance(document.getElementById("editPengumumanModal")).hide();
             } else {
+                console.warn("❌ Gagal Update:", data);
                 Swal.fire("Gagal", data.message, "error");
             }
-        } catch (err) { Swal.fire("Error", "Server Error.", "error"); }
+        } catch (err) { 
+            console.error("❌ Error Fetch:", err);
+            Swal.fire("Error", "Server Error.", "error"); 
+        }
+        console.groupEnd();
     });
 
     // --- DELETE ---
