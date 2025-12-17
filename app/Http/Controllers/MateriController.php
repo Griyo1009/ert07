@@ -12,7 +12,34 @@ use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary; // Tambahkan ini
 
 class MateriController extends Controller
 {
-    // ... (Fungsi index dan show tidak berubah)
+    // ===== TAMPILKAN LIST MATERI =====
+    public function index()
+    {
+        $materi = Materi::with('files')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('admin.materi', compact('materi'));
+    }
+
+    // ===== SHOW: AMBIL 1 DATA =====
+    public function show($id)
+    {
+        $materi = Materi::with('files')->find($id);
+
+        if (!$materi) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Materi tidak ditemukan.'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $materi
+        ]);
+    }
+
 
     // ===== STORE: TAMBAH MATERI BARU (DIMODIFIKASI) =====
     public function store(Request $request)
