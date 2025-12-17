@@ -14,38 +14,6 @@ use App\Http\Controllers\KomentarController;
 use App\Http\Controllers\PengumumanController;
 
 
-Route::get('/debug-ssl-path', function () {
-    $path = env('DB_SSL_CA'); // Akan mengambil /tmp/isrgrootx1.pem
-
-    if (!$path) {
-        return "Error: Variabel DB_SSL_CA tidak diatur di environment.";
-    }
-
-    if (file_exists($path)) {
-        // Cek apakah PHP bisa membaca file
-        $readable = is_readable($path);
-        
-        // Cek ukuran file (untuk memastikan bukan file kosong/corrupt)
-        $size = filesize($path); 
-
-        return [
-            'status' => 'SUCCESS',
-            'message' => 'File sertifikat ditemukan dan dapat dibaca.',
-            'path_terbaca' => $path,
-            'is_readable' => $readable ? 'Ya' : 'TIDAK',
-            'file_size_bytes' => $size,
-            'file_size_kb' => round($size / 1024, 2) . ' KB',
-        ];
-
-    } else {
-        return [
-            'status' => 'ERROR',
-            'message' => 'File sertifikat TIDAK DITEMUKAN di lokasi: ' . $path,
-            'path_diuji' => $path
-        ];
-    }
-});
-
 // ===== Halaman Awal =====
 Route::get('/', function () {
     return view('welcome');
