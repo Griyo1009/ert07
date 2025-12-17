@@ -64,21 +64,22 @@ class ProfileController extends Controller
             // 1. Hapus foto lama dari Cloudinary
             if ($user->foto_profil && $user->foto_profil !== 'default.png') {
                 try {
-                    Cloudinary::destroy($user->foto_profil);
+                    // Gunakan uploadApi() untuk destroy juga agar konsisten
+                    Cloudinary::uploadApi()->destroy($user->foto_profil);
                 } catch (\Exception $e) {
                     \Log::warning('Gagal menghapus foto lama: ' . $e->getMessage());
                 }
             }
 
-            // 2. Upload foto baru (MENGGUNAKAN FACADE CLOUDINARY LANGSUNG)
-            // Ini menggantikan $file->storeOnCloudinary() yang error
-            $uploadedFile = Cloudinary::upload($request->file('foto_profil')->getRealPath(), [
+            // 2. Upload foto baru (MENGGUNAKAN RAW API)
+            // uploadApi()->upload() mengembalikan ARRAY, bukan Objek
+            $result = Cloudinary::uploadApi()->upload($request->file('foto_profil')->getRealPath(), [
                 'folder' => 'profiles'
             ]);
 
-            // Ambil data hasil upload
-            $publicId = $uploadedFile->getPublicId();
-            $secureUrl = $uploadedFile->getSecurePath(); // Gunakan getSecurePath()
+            // Ambil data dari Array result
+            $publicId = $result['public_id'];      // Akses sebagai array
+            $secureUrl = $result['secure_url'];    // Akses sebagai array
 
             // Simpan ke database
             $user->foto_profil = $publicId; 
