@@ -18,10 +18,7 @@ require __DIR__.'/../vendor/autoload.php';
 
 // Bootstrap Laravel and handle the request...
 /** @var Application $app */
-
-
-// Memuat aplikasi Laravel...
-$app = require _DIR_ . '/../bootstrap/app.php';
+$app = require_once __DIR__.'/../bootstrap/app.php';
 
 // --- INI BAGIAN TERPENTING ---
 // Kita paksa Laravel menggunakan folder /tmp untuk penyimpanan
