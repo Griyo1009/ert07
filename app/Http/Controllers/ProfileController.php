@@ -6,14 +6,50 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary; // Tambahkan ini
 
 class ProfileController extends Controller
 {
-    // ... (Fungsi index dan update biodata tidak berubah)
+    /**
+     * Menampilkan halaman profil admin.
+     */
+    public function index()
+    {
+        // Asumsi route ini mengembalikan view blade Anda
+        return view('admin.admin-profile');
+    }
 
     /**
-     * Update foto profil pengguna (DIMODIFIKASI).
+     * Memperbarui biodata pengguna (Nama dan Email).
+     */
+    public function update(Request $request)
+    {
+        $user = Auth::user();
+
+        // Validasi, pastikan email unik kecuali email pengguna saat ini
+        $request->validate([
+            'nama_lengkap' => 'required|string|max:255',
+            'email' => [
+                'email'
+            ],
+        ]);
+
+        $user->nama_lengkap = $request->nama_lengkap;
+        $user->email = $request->email;
+        
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profil berhasil diperbarui.',
+            'data' => [
+                'nama_lengkap' => $user->nama_lengkap,
+                'email' => $user->email 
+            ]
+        ]);
+    }
+
+    /**
+     * Update foto profil pengguna.
      */
     public function updatePhoto(Request $request)
     {
