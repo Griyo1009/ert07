@@ -5,7 +5,7 @@
     "dev": "vite",
     "build": "vite build",
     "vercel-build": "npm run build",
-    "postinstall" : "cp ./storage/certs/isrgrootx1.pem /tmp/isrgrootx1.pem"
+    "postinstall": "echo '--- Starting SSL Copy ---' && cp ./storage/certs/isrgrootx1.pem /tmp/isrgrootx1.pem && echo '--- SSL Copy Finished ---'"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",
