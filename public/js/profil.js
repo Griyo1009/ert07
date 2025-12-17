@@ -55,15 +55,16 @@ document.addEventListener("DOMContentLoaded", function () {
         const json = await safeFetchJson(res);
 
         if (json.success) {
-            previewImg.src = json.image + "?v=" + new Date().getTime();
-            savePhotoBtn.classList.add("d-none");
-        }
+            Swal.fire("Berhasil!", json.message, "success");
+            // GANTI: Gunakan URL Cloudinary yang dikembalikan dari Controller
+            previewImg.src = json.image; 
+            savePhotoBtn.classList.add("d-none"); // Sembunyikan tombol simpan
+            fotoInput.value = "";
+        }else {
+            // ... (Error handling tidak berubah)
+            Swal.fire("Gagal!", json.message, "error");
 
-        Swal.fire(
-            json.success ? "Sukses!" : "Gagal!",
-            json.message,
-            json.success ? "success" : "error"
-        );
+        }
     });
 
     // --- 3. Update Biodata ---

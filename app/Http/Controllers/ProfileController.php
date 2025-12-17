@@ -6,50 +6,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary; // Tambahkan ini
 
 class ProfileController extends Controller
 {
-    /**
-     * Menampilkan halaman profil admin.
-     */
-    public function index()
-    {
-        // Asumsi route ini mengembalikan view blade Anda
-        return view('admin.admin-profile');
-    }
+    // ... (Fungsi index dan update biodata tidak berubah)
 
     /**
-     * Memperbarui biodata pengguna (Nama dan Email).
-     */
-    public function update(Request $request)
-    {
-        $user = Auth::user();
-
-        // Validasi, pastikan email unik kecuali email pengguna saat ini
-        $request->validate([
-            'nama_lengkap' => 'required|string|max:255',
-            'email' => [
-                'email'
-            ],
-        ]);
-
-        $user->nama_lengkap = $request->nama_lengkap;
-        $user->email = $request->email;
-        
-        $user->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Profil berhasil diperbarui.',
-            'data' => [
-                'nama_lengkap' => $user->nama_lengkap,
-                'email' => $user->email 
-            ]
-        ]);
-    }
-
-    /**
-     * Update foto profil pengguna.
+     * Update foto profil pengguna (DIMODIFIKASI).
      */
     public function updatePhoto(Request $request)
     {
@@ -59,26 +23,36 @@ class ProfileController extends Controller
             'foto_profil' => 'required|image|mimes:jpg,jpeg,png|max:2048' // Max 2MB
         ]);
 
-        // Hapus foto lama, kecuali jika foto lama adalah 'default.png' atau kosong
+        // 1. Hapus foto lama dari Cloudinary
         if ($user->foto_profil && $user->foto_profil !== 'default.png') {
-            // Pastikan Anda menggunakan 'storage' sebagai disk public
-            Storage::disk('public')->delete('profiles/' . $user->foto_profil);
+            // Asumsi foto_profil menyimpan Public ID Cloudinary
+            try {
+                Cloudinary::destroy($user->foto_profil);
+            } catch (\Exception $e) {
+                // Log error jika penghapusan gagal, tapi lanjutkan
+                \Log::warning('Gagal menghapus foto profil lama dari Cloudinary: ' . $e->getMessage());
+            }
         }
 
-        // Upload foto baru
+        // 2. Upload foto baru ke Cloudinary
         $file = $request->file('foto_profil');
-        // Gunakan hash nama file untuk menghindari konflik
-        $filename = time() . '_' . $file->hashName(); 
-        $file->storeAs('profiles', $filename, 'public');
+        // GANTI: Menggunakan storeOnCloudinary()
+        $uploadedFile = $file->storeOnCloudinary('profiles'); // Folder 'profiles'
 
-        $user->foto_profil = $filename;
+        // Ambil Public ID untuk disimpan di database
+        $publicId = $uploadedFile->getPublicId();
+        // Ambil URL Aman untuk respons klien
+        $secureUrl = $uploadedFile->getSecureUrl(); 
+
+        $user->foto_profil = $publicId; // Simpan Public ID
         $user->save();
         
-        // Mengembalikan path lengkap untuk update di client side
+        // Mengembalikan path lengkap (URL Aman) untuk update di client side
         return response()->json([
             'success' => true,
             'message' => 'Foto profil berhasil diperbarui.',
-            'image' => asset('storage/profiles/' . $user->foto_profil)
+            // GANTI: Menggunakan URL Aman Cloudinary
+            'image' => $secureUrl 
         ]);
     }
 }

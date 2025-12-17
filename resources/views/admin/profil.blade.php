@@ -26,13 +26,32 @@
 
 @php
 $user = Auth::user();
-$defaultImagePath = asset('images/profile-default.jpg'); // Path default image
+$defaultImagePath = asset('images/profile-default.jpg'); 
 
-// Cek apakah file foto profil ada di storage, jika tidak pakai default
-$storagePath = 'profiles/' . $user->foto_profil;
-$profileImagePath = ($user->foto_profil && Storage::disk('public')->exists($storagePath))
-? asset('storage/' . $storagePath)
-: $defaultImagePath;
+// Pastikan Anda memanggil Facade Cloudinary dengan namespace penuh
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+
+// LOGIKA BARU UNTUK FOTO PROFIL DARI CLOUDINARY
+$profileImagePath = $defaultImagePath;
+if ($user->foto_profil && $user->foto_profil !== 'default.png') {
+    // $user->foto_profil sekarang berisi Public ID Cloudinary.
+    // Gunakan Cloudinary::getUrl() untuk menghasilkan URL aman.
+    try {
+        // Tambahkan transformasi dasar (opsional: crop, resize)
+        $profileImagePath = Cloudinary::getUrl($user->foto_profil);
+        
+        // Contoh: Jika ingin melakukan crop dan resize (opsional, sesuaikan)
+        // $profileImagePath = Cloudinary::getApi()->url->secureUrl($user->foto_profil, [
+        //    'width' => 150, 
+        //    'height' => 150, 
+        //    'crop' => 'fill'
+        // ]);
+        
+    } catch (\Exception $e) {
+        // Jika terjadi error saat generate URL, gunakan default
+        $profileImagePath = $defaultImagePath;
+    }
+}
 @endphp
 
 <div class="mx-auto pt-5 pb-5" style="background: #162660;"> {{-- Warna BG gelap #162660 --}}

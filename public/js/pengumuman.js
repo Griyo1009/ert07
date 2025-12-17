@@ -7,6 +7,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!form || !toggleBtn || !cancelBtn || !list) return;
 
+    const CLOUD_NAME = window.CLOUDINARY_CLOUD_NAME || 'dl0v35l4q'; 
+    const CLOUDINARY_BASE_URL = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/`;
+
+    const FALLBACK_IMAGE_URL = window.DEFAULT_IMAGE_URL || '/images/default.jpg';
     // ====== Toggle Form ======
     toggleBtn.addEventListener("click", () => {
         form.classList.toggle("d-none");
@@ -20,6 +24,13 @@ document.addEventListener("DOMContentLoaded", () => {
         form.reset();
         toggleBtn.innerHTML = 'Tambah <i class="bi bi-plus-circle ms-2"></i>';
     });
+
+    function getCloudinaryUrl(publicId, transformation = 'w_200,h_150,c_fill/') {
+        if (!publicId) return FALLBACK_IMAGE_URL; // Fallback lokal dari Blade
+        
+        // Cld URL format: https://res.cloudinary.com/CLOUD_NAME/image/upload/t_x/public_id
+        return `${CLOUDINARY_BASE_URL}${transformation}${publicId}`;
+    }
 
     // ====== Tambah Pengumuman ======
     form.addEventListener("submit", async (e) => {
@@ -46,11 +57,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
                 const p = data.data;
+                const itemImageUrl = getCloudinaryUrl(p.gambar, 'w_200,h_150,c_fill/');
                 const newItem = `
                     <div class="card mb-3 shadow-sm pengumuman-item" data-id="${p.id_pengumuman}">
                         <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
                             <div class="d-flex flex-column flex-md-row align-items-start gap-3 w-100">
-                                <img src="/storage/${p.gambar ?? 'default.jpg'}"
+                                <img src="${itemImageUrl}" 
                                     alt="Gambar Pengumuman"
                                     class="rounded"
                                     style="width:200px; height:150px; object-fit:cover;">
@@ -84,6 +96,22 @@ document.addEventListener("DOMContentLoaded", () => {
             Swal.fire("Error", "Gagal mengirim data ke server.", "error");
         }
     });
+    function appendPengumuman(data) {
+    
+        const imageUrl = getCloudinaryUrl(data.gambar);
+        
+        const newCard = document.createElement("div");
+        newCard.classList.add("card", "mb-3", "shadow-sm", "pengumuman-item");
+        newCard.setAttribute("data-id", data.id_pengumuman);
+        newCard.innerHTML = `
+            <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
+                <div class="d-flex flex-column flex-md-row align-items-start gap-3 w-100 ">
+                    <img src="${imageUrl}" alt="Gambar Pengumuman" class="rounded" style="width:200px; height:150px; object-fit:cover;">
+                    </div>
+                </div>
+        `;
+        list.prepend(newCard); // Tambahkan di paling atas
+    }
 
     // ====== Edit Pengumuman ======
     list.addEventListener("click", async (e) => {
@@ -104,8 +132,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
                     const preview = document.getElementById("previewEditImage");
-                    if (data.gambar) {
-                        preview.src = `/storage/${data.gambar}`;
+                    const publicId = data.gambar;
+
+                    // *** PERBAIKAN: Gunakan fungsi getCloudinaryUrl untuk mengisi preview modal ***
+                    if (publicId) {
+                        // Gunakan transformasi yang lebih besar untuk preview di modal
+                        preview.src = getCloudinaryUrl(publicId, 'w_300,h_200,c_fill/'); 
                         preview.style.display = "block";
                     } else {
                         preview.style.display = "none";
@@ -146,8 +178,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const card = document.querySelector(`[data-id="${id}"]`);
                 if (card) {
-                    if (data.data.gambar)
-                        card.querySelector("img").src = `/storage/${data.data.gambar}`;
+                    const p = data.data;
+
+                    if (p.gambar) {
+                        const newImageUrl = getCloudinaryUrl(p.gambar, 'w_200,h_150,c_fill/');
+                        card.querySelector("img").src = newImageUrl;
+                    }
+
                     card.querySelector("h5").textContent = formData.get("judul");
                     card.querySelector("p").textContent =
                         formData.get("isi").substring(0, 120) + "...";

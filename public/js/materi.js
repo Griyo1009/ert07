@@ -1,8 +1,18 @@
 document.addEventListener("DOMContentLoaded", () => {
     const formMateri = document.getElementById("formMateri");
     const listMateri = document.getElementById("listMateri");
+    const formEditMateri = document.getElementById("formEditMateri");
     let deletedFiles = [];
 
+    const CLOUD_NAME = window.CLOUDINARY_CLOUD_NAME || 'dl0v35l4q';
+    const FALLBACK_IMAGE_URL = window.DEFAULT_IMAGE_URL || '/images/default.jpg';
+    const CLOUDINARY_BASE_URL = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/`;
+
+    function getCloudinaryAssetUrl(publicId) {
+        if (!publicId) return '#';
+        // Asumsi raw/upload/ untuk file yang diunggah seperti PDF, Video, Doc.
+        return `${CLOUDINARY_BASE_URL}${publicId}`; 
+    }
     // ===== CREATE MATERI =====
     formMateri?.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -113,18 +123,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 // --- Render File & Link yang Sudah Ada ---
                 const fileContainer = document.getElementById("existingFiles");
                 fileContainer.innerHTML = "";
-
+             
                 if (data.data.files && data.data.files.length > 0) {
                     data.data.files.forEach(file => {
-                        const div = document.createElement("div");
+                       const div = document.createElement("div");
                         div.classList.add("d-flex", "justify-content-between", "align-items-center", "mb-1", "p-2", "border-bottom");
                         
-                        // Cek tipe untuk menentukan tampilan
                         let fileDisplay = '';
+                        let href = '#';
+                        let fileIdentifier = file.file_path; // Public ID
+
                         if(file.tipe_file === 'link') {
-                            fileDisplay = `<i class="bi bi-link-45deg me-2 text-primary"></i> <a href="${file.link_url}" target="_blank" class="text-truncate" style="max-width: 300px;">${file.link_url}</a>`;
+                            href = file.link_url;
+                            fileDisplay = `<i class="bi bi-link-45deg me-2 text-primary"></i> <a href="${href}" target="_blank" class="text-truncate" style="max-width: 300px;">${file.link_url}</a>`;
                         } else {
-                            fileDisplay = `<i class="bi bi-file-earmark me-2 text-secondary"></i> <a href="/storage/${file.file_path}" target="_blank" class="text-truncate" style="max-width: 300px;">${file.file_path.split('/').pop()}</a>`;
+                            // File Cloudinary: Gunakan link_url (Secure URL) atau Public ID untuk merangkai
+                            href = file.link_url || getCloudinaryAssetUrl(file.file_path);
+                            fileDisplay = `<i class="bi bi-file-earmark me-2 text-secondary"></i> <a href="${href}" target="_blank" class="text-truncate" style="max-width: 300px;">${fileIdentifier.split('/').pop()}</a>`;
                         }
 
                         div.innerHTML = `
@@ -241,12 +256,17 @@ document.addEventListener("DOMContentLoaded", () => {
     // ===== DELETE FILE (LOCAL ONLY) =====
     document.addEventListener("click", (e) => {
         const btn = e.target.closest(".btn-remove-file");
-        if (!btn) return;
+        if (btn) {
+            const id = btn.dataset.id;
 
-        const idFile = btn.dataset.id;
-        if (!deletedFiles.includes(idFile)) deletedFiles.push(idFile);
-
-        btn.parentElement.remove();
+            if (id) {
+                // Tambahkan ke array deletedFiles untuk dikirim saat UPDATE
+                deletedFiles.push(id);
+                // Tambahkan public ID/path jika diperlukan untuk logging atau validasi
+                // Hapus dari DOM
+                btn.closest(".file-item-wrapper").remove();
+            }
+        }
     });
 
     // ===== UPDATE CARD DISPLAY AFTER EDIT =====
@@ -274,8 +294,18 @@ document.addEventListener("DOMContentLoaded", () => {
         else if (file.tipe_file === "gambar") icon = "bi-image";
         else if (file.tipe_file === "link") icon = "bi-link-45deg";
 
-        const href = file.tipe_file === "link" ? file.link_url : `/storage/${file.file_path}`;
-        const text = file.tipe_file === "link" ? file.link_url : "Lihat File";
+        let href = file.link_url; // Gunakan link_url sebagai URL utama
+        let text = "";
+
+        if (file.tipe_file === "link") {
+            text = file.link_url;
+        } else {
+            // File Cloudinary: Jika link_url kosong, gunakan Public ID untuk merangkai URL
+            if (!href) {
+                href = getCloudinaryAssetUrl(file.file_path);
+            }
+            text = "Lihat File: " + (file.file_path ? file.file_path.split('/').pop() : 'File');
+        }
 
         return `
           <div class="file-item">

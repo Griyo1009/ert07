@@ -160,6 +160,10 @@
 <!-- ===== LIST MATERI ===== -->
 <div class="container mt-5 mx-6" id="listMateri">
     <h6 class="fw-bold mb-3 text-uppercase text-muted">Daftar Materi</h6>
+    @php
+        use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+        $CLOUDINARY_CLOUD_NAME = env('CLOUDINARY_CLOUD_NAME');
+    @endphp
 
     @foreach($materi as $item)
     <div class="materi-card mb-4">
@@ -182,23 +186,39 @@
             <div class="file-item">
                 @if($f->tipe_file == 'pdf')
                 <i class="bi bi-file-earmark-pdf"></i>
-                <a href="{{ asset('storage/' . $f->file_path) }}" target="_blank" class="text-decoration-none">Lihat
-                    PDF</a>
+                @php
+                    $href = $f->link_url ?? ($f->file_path ? Cloudinary::getUrl($f->file_path) : '#');
+                    $text = 'Lihat PDF: ' . \Illuminate\Support\Str::limit($f->file_path ?? 'File', 20);
+                @endphp
+                <a href="{{ $href }}" target="_blank" class="text-decoration-none">{{ $text }}</a>
+
                 @elseif($f->tipe_file == 'mp4')
                 <i class="bi bi-play-circle"></i>
-                <a href="{{ asset('storage/' . $f->file_path) }}" target="_blank" class="text-decoration-none">Putar
-                    Video</a>
+                 @php
+                    $href = $f->link_url ?? ($f->file_path ? Cloudinary::getUrl($f->file_path) : '#');
+                    $text = 'Putar Video: ' . \Illuminate\Support\Str::limit($f->file_path ?? 'File', 20);
+                @endphp
+                <a href="{{ $href }}" target="_blank" class="text-decoration-none">{{ $text }}</a>
+
                 @elseif($f->tipe_file == 'gambar')
                 <i class="bi bi-image"></i>
-                <a href="{{ asset('storage/' . $f->file_path) }}" target="_blank" class="text-decoration-none">Lihat
-                    Gambar</a>
+                 @php
+                    $href = $f->link_url ?? ($f->file_path ? Cloudinary::getUrl($f->file_path) : '#');
+                    $text = 'Lihat Gambar: ' . \Illuminate\Support\Str::limit($f->file_path ?? 'File', 20);
+                @endphp
+                <a href="{{ $href }}" target="_blank" class="text-decoration-none">{{ $text }}</a>
+
                 @elseif($f->tipe_file == 'link')
                 <i class="bi bi-link-45deg"></i>
                 <a href="{{ $f->link_url }}" target="_blank" class="text-decoration-none">{{ $f->link_url }}</a>
                 @else
                 <i class="bi bi-file-earmark-text"></i>
-                <a href="{{ asset('storage/' . $f->file_path) }}" target="_blank" class="text-decoration-none">Unduh
-                    File</a>
+                @php
+                    // Fallback untuk file yang tidak terdeteksi tipenya tapi memiliki Public ID/URL
+                    $href = $f->link_url ?? ($f->file_path ? Cloudinary::getUrl($f->file_path) : '#');
+                    $text = 'Unduh File: ' . \Illuminate\Support\Str::limit($f->file_path ?? 'File', 20);
+                @endphp
+                <a href="{{ $href }}" target="_blank" class="text-decoration-none">{{ $text }}</a>
                 @endif
             </div>
             @endforeach
@@ -208,6 +228,10 @@
 </div>
 @endsection
 
+<script>
+    const CLOUDINARY_CLOUD_NAME = '{{ $CLOUDINARY_CLOUD_NAME }}';
+    const DEFAULT_IMAGE_URL = '{{ asset('images/default.jpg') }}';
+</script>
 @push('scripts')
 <script src="{{ asset('js/materi.js') }}"></script>
 <script>

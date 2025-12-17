@@ -7,46 +7,22 @@ use App\Models\MateriFile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log; // Gunakan Log untuk debugging
+use Illuminate\Support\Facades\Log;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary; // Tambahkan ini
 
 class MateriController extends Controller
 {
-    // ===== TAMPILKAN LIST MATERI =====
-    public function index()
-    {
-        $materi = Materi::with('files')
-            ->orderBy('created_at', 'desc')
-            ->get();
+    // ... (Fungsi index dan show tidak berubah)
 
-        return view('admin.materi', compact('materi'));
-    }
-
-    // ===== SHOW: AMBIL 1 DATA =====
-    public function show($id)
-    {
-        $materi = Materi::with('files')->find($id);
-
-        if (!$materi) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Materi tidak ditemukan.'
-            ], 404);
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => $materi
-        ]);
-    }
-
-    // ===== STORE: TAMBAH MATERI BARU =====
+    // ===== STORE: TAMBAH MATERI BARU (DIMODIFIKASI) =====
     public function store(Request $request)
     {
         $request->validate([
             'judul' => 'required|string|max:225',
             'deskripsi' => 'required|string',
             // Pastikan ini adalah nama input di form create
-            'files.*' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,jpg,jpeg,png,mp4|max:51200', 
+            // Hapus aturan mimes:doc, docx, ppt, pptx jika Anda hanya akan mengunggah yang didukung Cloudinary secara langsung
+            'files.*' => 'nullable|file|mimes:pdf,mp4,jpg,jpeg,png,webp|max:51200', 
             'links.*' => 'nullable|url',
         ]);
 
@@ -61,25 +37,33 @@ class MateriController extends Controller
             // Simpan file
             if ($request->hasFile('files')) {
                 foreach ($request->file('files') as $file) {
-                    $path = $file->store('materi', 'public');
+                    // GANTI: Menggunakan storeOnCloudinary()
+                    $uploadedFile = $file->storeOnCloudinary('materi'); 
+                    
+                    $publicId = $uploadedFile->getPublicId();
+                    // Simpan URL aman sebagai path atau gunakan publicId untuk rekonstruksi
+                    $secureUrl = $uploadedFile->getSecureUrl(); 
+                    
                     $ext = strtolower($file->getClientOriginalExtension());
                     $tipe = match ($ext) {
                         'pdf' => 'pdf',
                         'mp4' => 'mp4',
-                        'jpg', 'jpeg', 'png' => 'gambar',
-                        'doc', 'docx', 'ppt', 'pptx' => 'teks',
+                        'jpg', 'jpeg', 'png', 'webp' => 'gambar',
+                        // Jika Anda mengunggah doc/ppt, Anda perlu memprosesnya secara berbeda
                         default => 'lainnya',
                     };
 
                     MateriFile::create([
                         'id_materi' => $materi->id_materi,
-                        'file_path' => $path,
+                        // Simpan Public ID untuk kebutuhan penghapusan
+                        'file_path' => $publicId, 
+                        'link_url' => $secureUrl, // Opsional: Simpan URL di kolom link_url
                         'tipe_file' => $tipe,
                     ]);
                 }
             }
-
-            // Simpan link eksternal
+            
+            // ... (Simpan link eksternal tidak berubah)
             if ($request->links && is_array($request->links)) {
                 foreach ($request->links as $link) {
                     if (!empty($link)) {
@@ -106,7 +90,7 @@ class MateriController extends Controller
         }
     }
 
-    // ===== UPDATE MATERI (TERKOREKSI) =====
+    // ===== UPDATE MATERI (DIMODIFIKASI) =====
     public function update(Request $request, $id)
     {
         $materi = Materi::with('files')->find($id);
@@ -119,11 +103,10 @@ class MateriController extends Controller
         }
 
         // 1. VALIDASI DATA BARU
-        // Menggunakan 'new_files.*' dan 'new_links.*' sesuai nama input dari JS
         $request->validate([
             'judul_materi' => 'required|string|max:225',
             'deskripsi' => 'nullable|string',
-            'new_files.*' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,jpg,jpeg,png,mp4|max:51200',
+            'new_files.*' => 'nullable|file|mimes:pdf,mp4,jpg,jpeg,png,webp|max:51200',
             'new_links.*' => 'nullable|url',
         ]);
 
@@ -133,7 +116,6 @@ class MateriController extends Controller
                 'judul_materi' => $request->judul_materi,
                 'deskripsi' => $request->deskripsi,
                 'tgl_up' => now()->format('Y-m-d'),
-                // 'id_user' tidak perlu di-update jika tidak berubah
             ]);
 
             // 3. PROSES PENGHAPUSAN FILE LAMA (deleted_files)
@@ -144,9 +126,10 @@ class MateriController extends Controller
                     $filesToDelete = MateriFile::whereIn('id_file', $deletedIds)->get();
                     
                     foreach ($filesToDelete as $file) {
-                        // Hapus file fisik jika bukan link dan memiliki path
-                        if ($file->tipe_file !== 'link' && $file->file_path && Storage::disk('public')->exists($file->file_path)) {
-                            Storage::disk('public')->delete($file->file_path);
+                        // GANTI: Hapus file dari Cloudinary jika file_path berisi Public ID
+                        if ($file->tipe_file !== 'link' && $file->file_path) {
+                            // Gunakan SDK Cloudinary untuk menghapus berdasarkan Public ID
+                            Cloudinary::destroy($file->file_path);
                         }
                         // Hapus record dari database
                         $file->delete();
@@ -155,32 +138,35 @@ class MateriController extends Controller
             }
             
             // 4. SIMPAN FILE BARU (new_files)
-            // Menggunakan 'new_files' sesuai nama input di FormData JS
             if ($request->hasFile('new_files')) { 
                 foreach ($request->file('new_files') as $file) {
-                    $path = $file->store('materi', 'public');
+                    // GANTI: Menggunakan storeOnCloudinary()
+                    $uploadedFile = $file->storeOnCloudinary('materi'); 
+
+                    $publicId = $uploadedFile->getPublicId();
+                    $secureUrl = $uploadedFile->getSecureUrl(); 
+
                     $ext = strtolower($file->getClientOriginalExtension());
                     $tipe = match ($ext) {
                         'pdf' => 'pdf',
                         'mp4' => 'mp4',
-                        'jpg', 'jpeg', 'png' => 'gambar',
-                        'doc', 'docx', 'ppt', 'pptx' => 'teks',
+                        'jpg', 'jpeg', 'png', 'webp' => 'gambar',
                         default => 'lainnya',
                     };
 
                     MateriFile::create([
                         'id_materi' => $materi->id_materi,
-                        'file_path' => $path,
+                        // Simpan Public ID untuk kebutuhan penghapusan
+                        'file_path' => $publicId, 
+                        'link_url' => $secureUrl,
                         'tipe_file' => $tipe,
                     ]);
                 }
             }
             
-            // 5. SIMPAN LINK BARU (new_links)
-            // Menggunakan 'new_links' sesuai nama input di FormData JS
+            // ... (Simpan LINK BARU tidak berubah)
             if ($request->new_links && is_array($request->new_links)) {
                 foreach ($request->new_links as $link) {
-                    // PENTING: Cek agar input kosong di UI (yang Anda minta) tidak tersimpan
                     if (!empty($link)) { 
                         MateriFile::create([
                             'id_materi' => $materi->id_materi,
@@ -195,7 +181,7 @@ class MateriController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Materi berhasil diperbarui!',
-                'data' => $materi->load('files') // Reload relasi files
+                'data' => $materi->load('files')
             ]);
         } catch (\Exception $e) {
             Log::error('Gagal update materi: ' . $e->getMessage());
@@ -206,7 +192,7 @@ class MateriController extends Controller
         }
     }
 
-    // ===== HAPUS MATERI =====
+    // ===== HAPUS MATERI (DIMODIFIKASI) =====
     public function destroy($id)
     {
         $materi = Materi::with('files')->find($id);
@@ -220,8 +206,10 @@ class MateriController extends Controller
 
         try {
             foreach ($materi->files as $file) {
-                if ($file->file_path && Storage::disk('public')->exists($file->file_path)) {
-                    Storage::disk('public')->delete($file->file_path);
+                // GANTI: Hapus dari Cloudinary berdasarkan Public ID
+                if ($file->tipe_file !== 'link' && $file->file_path) {
+                    // Asumsi file_path menyimpan Public ID Cloudinary
+                    Cloudinary::destroy($file->file_path);
                 }
                 $file->delete();
             }

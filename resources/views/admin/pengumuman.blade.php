@@ -38,6 +38,11 @@
     </style>
 @endpush
 
+@php
+    use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+    $CLOUDINARY_CLOUD_NAME = env('CLOUDINARY_CLOUD_NAME'); // Ambil Cloud Name untuk JS
+@endphp
+
 @section('content')
     <div class="container-fluid p-0 mb-5">
         <!-- ===== HEADER ===== -->
@@ -114,7 +119,13 @@
                     <div class="card mb-3 shadow-sm pengumuman-item" data-id="{{ $item->id_pengumuman }}">
                         <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
                             <div class="d-flex flex-column flex-md-row align-items-start gap-3 w-100 ">
-                                <img src="{{ asset('storage/' . ($item->gambar ?? 'default.jpg')) }}" alt="Gambar Pengumuman"
+                                @php
+                                    // Logika: Jika ada Public ID (gambar), buat URL Cloudinary, jika tidak, pakai default lokal
+                                    $imageUrl = $item->gambar 
+                                                ? Cloudinary::getUrl($item->gambar) 
+                                                : asset('images/default.jpg'); // Asumsi Anda punya default.jpg di public/images
+                                @endphp
+                                <img src="{{ $imageUrl }}" alt="Gambar Pengumuman"
                                     class="rounded" style="width:200px; height:150px; object-fit:cover;">
                                 <div class="flex-grow-1">
                                     <h5 class="fw-bold mb-4">{{ $item->judul }}</h5>
@@ -199,6 +210,11 @@
         </div>
     </div>
 @endsection
+
+<script>
+    const CLOUDINARY_CLOUD_NAME = '{{ $CLOUDINARY_CLOUD_NAME }}';
+    const DEFAULT_IMAGE_URL = '{{ asset('images/default.jpg') }}';
+</script>
 
 @push('scripts')
 
