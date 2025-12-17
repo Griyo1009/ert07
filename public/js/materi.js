@@ -287,6 +287,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ===== FILE ITEM RENDERER =====
+    // ===== FILE ITEM RENDERER =====
     function renderFileItem(file) {
         let icon = "bi-file-earmark-text";
         if (file.tipe_file === "pdf") icon = "bi-file-earmark-pdf";
@@ -294,23 +295,23 @@ document.addEventListener("DOMContentLoaded", () => {
         else if (file.tipe_file === "gambar") icon = "bi-image";
         else if (file.tipe_file === "link") icon = "bi-link-45deg";
 
-        let href = file.link_url; // Gunakan link_url sebagai URL utama
-        let text = "";
-
-        if (file.tipe_file === "link") {
-            text = file.link_url;
-        } else {
-            // File Cloudinary: Jika link_url kosong, gunakan Public ID untuk merangkai URL
-            if (!href) {
-                href = getCloudinaryAssetUrl(file.file_path);
-            }
-            text = "Lihat File: " + (file.file_path ? file.file_path.split('/').pop() : 'File');
+        // Prioritaskan link_url yang disimpan DB (Secure URL dari Cloudinary)
+        // Jika kosong, baru fallback ke construct manual (jarang terjadi dengan controller baru)
+        let href = file.link_url; 
+        if (!href && file.file_path) {
+             href = `${CLOUDINARY_BASE_URL}${file.file_path}`;
+        }
+        
+        // Tampilkan nama file (ambil bagian akhir dari path)
+        let text = file.tipe_file === "link" ? file.link_url : "Lihat File";
+        if(file.tipe_file !== "link" && file.file_path) {
+            text += `: ${file.file_path.split('/').pop()}`;
         }
 
         return `
           <div class="file-item">
               <i class="bi ${icon}"></i>
-              <a href="${href}" target="_blank" class="text-decoration-none">${text}</a>
+              <a href="${href}" target="_blank" class="text-decoration-none text-truncate" style="max-width: 250px;">${text}</a>
           </div>
         `;
     }

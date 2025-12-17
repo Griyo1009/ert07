@@ -4,21 +4,21 @@
 
 @push('styles')
     <style>
-.profile-wave-separator {
-    position: relative;
-    height: 60px;
-    background-color: #162660; 
-
-.profile-wave-separator::after {
-    content: '';
-    position: absolute;
-    bottom: -1px; 
-    left: 0;
-    right: 0;
-    height: 60px; 
-    background-image: url("data:image/svg+xml;charset=utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 100' preserveAspectRatio='none'><path d='M0 100 L1000 100 L1000 0 C750 60 250 60 0 0 L0 100' fill='%23f8f9fa'/></svg>");
-    background-size: 100% 100%;
-}
+    .profile-wave-separator {
+        position: relative;
+        height: 60px;
+        background-color: #162660; 
+    }
+    .profile-wave-separator::after {
+        content: '';
+        position: absolute;
+        bottom: -1px; 
+        left: 0;
+        right: 0;
+        height: 60px; 
+        background-image: url("data:image/svg+xml;charset=utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 100' preserveAspectRatio='none'><path d='M0 100 L1000 100 L1000 0 C750 60 250 60 0 0 L0 100' fill='%23f8f9fa'/></svg>");
+        background-size: 100% 100%;
+    }
 
     </style>
 @endpush

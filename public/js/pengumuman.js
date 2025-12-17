@@ -14,9 +14,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const FALLBACK_IMAGE_URL = window.DEFAULT_IMAGE_URL || 'https://via.placeholder.com/200x150?text=No+Image';
 
     // Helper: Generate URL
-    function getCloudinaryUrl(publicId, transformation = 'w_200,h_150,c_fill/') {
+    function getCloudinaryUrl(publicId) {
         if (!publicId) return FALLBACK_IMAGE_URL;
-        return `${CLOUDINARY_BASE_URL}${transformation}${publicId}`;
+        if (publicId.startsWith('http')) return publicId;
+        
+        return `${CLOUDINARY_BASE_URL}w_400,c_fill/${publicId}`;
     }
 
     // --- TOGGLE FORM ---
