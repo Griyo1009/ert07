@@ -47,6 +47,7 @@ class PengumumanController extends Controller
                 return response()->json(['success' => false, 'message' => 'Gagal upload gambar.'], 500);
             }
         }
+        dd($gambarPublicId);
 
         try {
             $pengumuman = Pengumuman::create([
