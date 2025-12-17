@@ -28,7 +28,7 @@
     "env": {
         "APP_ENV": "production",
         "APP_DEBUG": "none",
-        "APP_URL": "https://ERT07.com",
+        "APP_URL": "https://ert07.vercel.app/",
         "APP_CONFIG_CACHE": "/tmp/config.php",
         "APP_EVENTS_CACHE": "/tmp/events.php",
         "APP_PACKAGES_CACHE": "/tmp/packages.php",

@@ -18,6 +18,24 @@ require __DIR__.'/../vendor/autoload.php';
 
 // Bootstrap Laravel and handle the request...
 /** @var Application $app */
-$app = require_once __DIR__.'/../bootstrap/app.php';
 
-$app->handleRequest(Request::capture());
+
+// Memuat aplikasi Laravel...
+$app = require _DIR_ . '/../bootstrap/app.php';
+
+// --- INI BAGIAN TERPENTING ---
+// Kita paksa Laravel menggunakan folder /tmp untuk penyimpanan
+// karena folder asli di Vercel bersifat Read-Only.
+$storagePath = '/tmp/storage';
+
+if (!is_dir($storagePath)) {
+    mkdir($storagePath, 0777, true);
+}
+
+$app->useStoragePath($storagePath);
+// -----------------------------
+
+// Menangani request (Sesuai versi Laravel kamu)
+// Jika Laravel 11 (karena kamu pakai Tailwind v4, asumsi saya ini Laravel terbaru):
+$app->handleRequest(Illuminate\Http\Request::capture());
+
