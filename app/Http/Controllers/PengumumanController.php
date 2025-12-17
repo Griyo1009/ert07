@@ -6,23 +6,17 @@ use App\Models\Pengumuman;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-// PENTING: Import Facade Cloudinary agar tidak error
+// Import Cloudinary
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class PengumumanController extends Controller
 {
-    /**
-     * Menampilkan halaman daftar pengumuman.
-     */
     public function index()
     {
         $pengumuman = Pengumuman::latest()->get();
         return view('admin.pengumuman', compact('pengumuman'));
     }
 
-    /**
-     * Menampilkan detail satu pengumuman (JSON) untuk Modal Edit.
-     */
     public function show($id)
     {
         $pengumuman = Pengumuman::find($id);
@@ -32,51 +26,52 @@ class PengumumanController extends Controller
         return response()->json($pengumuman);
     }
 
-    /**
-     * Menyimpan pengumuman baru.
-     */
     public function store(Request $request)
     {
-        // 1. Validasi Input
+        // 1. Validasi
         $validated = $request->validate([
             'judul' => 'required|string|max:255',
             'isi' => 'required|string',
-            'tgl_pelaksanaan' => 'required|string', 
+            'tgl_pelaksanaan' => 'required|string',
             'lokasi' => 'required|string',
-            'tgl_pengumuman' => 'nullable|date', 
+            'tgl_pengumuman' => 'nullable|date',
             'gambar' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
         ]);
 
+        // 2. Ambil ID User (Pastikan user login)
         $idUser = Auth::id();
         if (!$idUser) {
-            return response()->json(['success' => false, 'message' => 'User belum login.'], 401);
+            return response()->json(['success' => false, 'message' => 'Sesi habis, silakan login ulang.'], 401);
         }
 
-        // 2. Upload Gambar ke Cloudinary (PERBAIKAN DI SINI)
+        // 3. Upload Gambar ke Cloudinary (BAGIAN PENTING)
         $gambarPublicId = null;
         if ($request->hasFile('gambar')) {
             try {
-                // Upload file langsung ke Cloudinary folder 'pengumuman'
+                // Upload ke Cloudinary
                 $uploadedFile = Cloudinary::upload($request->file('gambar')->getRealPath(), [
                     'folder' => 'pengumuman'
                 ]);
-                // Simpan Public ID (bukan path lokal)
+                
+                // Ambil Public ID (bukan path lokal)
                 $gambarPublicId = $uploadedFile->getPublicId();
             } catch (\Exception $e) {
+                // Log error untuk debugging di Vercel
                 Log::error('Gagal upload gambar pengumuman: ' . $e->getMessage());
                 return response()->json([
                     'success' => false,
-                    'message' => 'Gagal mengupload gambar ke server.',
+                    'message' => 'Gagal mengupload gambar ke Cloudinary.',
                 ], 500);
             }
         }
 
-        // 3. Simpan Data ke Database
+        // 4. Simpan Data ke Database
         $data = [
             'id_user' => $idUser,
             'judul' => $validated['judul'],
             'isi' => $validated['isi'],
-            'tgl_pengumuman' => $request->tgl_pengumuman ?? now(),
+            // Gunakan tanggal hari ini jika kosong
+            'tgl_pengumuman' => $request->tgl_pengumuman ?? now()->format('Y-m-d'), 
             'tgl_pelaksanaan' => $validated['tgl_pelaksanaan'],
             'lokasi' => $validated['lokasi'],
             'gambar' => $gambarPublicId, // Simpan Public ID Cloudinary
@@ -91,17 +86,14 @@ class PengumumanController extends Controller
                 'data' => $pengumuman,
             ]);
         } catch (\Exception $e) {
-            Log::error('Pengumuman store error: ' . $e->getMessage());
+            Log::error('Error Simpan DB: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan server saat menyimpan pengumuman.',
+                'message' => 'Gagal menyimpan data ke database.',
             ], 500);
         }
     }
 
-    /**
-     * Memperbarui pengumuman.
-     */
     public function update(Request $request, $id)
     {
         $pengumuman = Pengumuman::find($id);
@@ -118,9 +110,9 @@ class PengumumanController extends Controller
             'lokasi' => 'required|string',
         ]);
 
-        // Proses Update Gambar (PERBAIKAN DI SINI)
+        // LOGIKA GAMBAR BARU (CLOUDINARY)
         if ($request->hasFile('gambar')) {
-            // Hapus gambar lama di Cloudinary jika ada
+            // 1. Hapus gambar lama di Cloudinary jika ada
             if ($pengumuman->gambar) {
                 try {
                     Cloudinary::destroy($pengumuman->gambar);
@@ -129,13 +121,14 @@ class PengumumanController extends Controller
                 }
             }
 
-            // Upload gambar baru
+            // 2. Upload gambar baru ke Cloudinary
             try {
                 $uploadedFile = Cloudinary::upload($request->file('gambar')->getRealPath(), [
                     'folder' => 'pengumuman'
                 ]);
                 $validated['gambar'] = $uploadedFile->getPublicId();
             } catch (\Exception $e) {
+                Log::error("Gagal upload update: " . $e->getMessage());
                 return response()->json(['success' => false, 'message' => 'Gagal upload gambar baru.'], 500);
             }
         }
@@ -153,37 +146,18 @@ class PengumumanController extends Controller
         }
     }
 
-    /**
-     * Menghapus pengumuman.
-     */
     public function destroy($id)
     {
-        try {
-            $pengumuman = Pengumuman::find($id);
+        $pengumuman = Pengumuman::find($id);
+        if (!$pengumuman) return response()->json(['message' => 'Tidak ditemukan'], 404);
 
-            if (!$pengumuman) {
-                return response()->json(['success' => false, 'message' => 'Pengumuman tidak ditemukan.'], 404);
-            }
-
-            // Hapus gambar di Cloudinary
-            if ($pengumuman->gambar) {
-                try {
-                    Cloudinary::destroy($pengumuman->gambar);
-                } catch (\Exception $e) {
-                    Log::warning('Gagal menghapus gambar Cloudinary: ' . $e->getMessage());
-                }
-            }
-
-            $judul = $pengumuman->judul;
-            $pengumuman->delete();
-
-            return response()->json([
-                'success' => true,
-                'message' => "Pengumuman '{$judul}' berhasil dihapus.",
-                'deleted_id' => $id,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Gagal menghapus pengumuman.'], 500);
+        if ($pengumuman->gambar) {
+            try {
+                Cloudinary::destroy($pengumuman->gambar);
+            } catch (\Exception $e) {}
         }
+        
+        $pengumuman->delete();
+        return response()->json(['success' => true, 'message' => 'Berhasil dihapus.']);
     }
 }
