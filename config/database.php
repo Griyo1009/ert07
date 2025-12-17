@@ -2,6 +2,15 @@
 
 use Illuminate\Support\Str;
 
+$certFileName = 'isrgrootx1.pem';
+$sourcePath = base_path('storage/certs/' . $certFileName);
+$destPath = '/tmp/' . $certFileName;
+
+// Cek jika kita di Vercel (atau file sumber ada) dan file tujuan belum ada
+if (file_exists($sourcePath) && !file_exists($destPath)) {
+    // Salin file ke /tmp
+    @copy($sourcePath, $destPath);
+}
 return [
 
     /*
@@ -58,8 +67,7 @@ return [
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                \PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-                \PDO::ATTR_TIMEOUT => 5,
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],
 
