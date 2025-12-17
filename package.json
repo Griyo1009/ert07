@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "vercel-build": "npm run build"
+    "vercel-build": "npm run build",
+    "postinstall" : "cp ./storage/certs/isrgrootx1.pem /tmp/isrgrootx1.pem"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",
