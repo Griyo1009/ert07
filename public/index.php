@@ -34,5 +34,4 @@ $app->useStoragePath($storagePath);
 
 // Menangani request (Sesuai versi Laravel kamu)
 // Jika Laravel 11 (karena kamu pakai Tailwind v4, asumsi saya ini Laravel terbaru):
-$app->handleRequest(Illuminate\Http\Request::capture());
-
+$app->handleRequest(Request::capture());
